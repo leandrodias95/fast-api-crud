@@ -1,0 +1,9 @@
+
+ativa:
+source fast-api-crud/bin/activate
+
+desativa:
+deactivate
+
+incia o servidor: 
+uvicorn main:app --reload 
