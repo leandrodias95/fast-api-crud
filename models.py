@@ -1,8 +1,8 @@
 from sqlalchemy import Boolean, create_engine, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.types import ChoiceType
+from sqlalchemy_utils import ChoiceType
 
-db = create_engine("sqlite:///banco.db")
+db = create_engine("sqlite:///database.db")
 
 Base = declarative_base()
 
@@ -26,14 +26,14 @@ class User(Base):
 class  Order(Base):
     __tablename__ = "orders"
 
-    STATUS_ORDERS = [
-        ("PENDING", "PENDING"),
-        ("COMPLETED", "COMPLETED"),
-        ("CANCELLED", "CANCELLED")
-    ]
+   # STATUS_ORDERS = [
+   #     ("PENDING", "PENDING"),
+   #     ("COMPLETED", "COMPLETED"),
+   #     ("CANCELLED", "CANCELLED")
+   # ]
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    status = Column(ChoiceType(STATUS_ORDERS), nullable=False)
+    status = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     total = Column(Float, nullable=False)
     #ITEMS ORDERED RELATIONSHIP
