@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from models import User
 from dependencies import get_db_session
+from security import hash_password
+from schemas import UserSchema
+from sqlalchemy.orm import Session
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
 @auth_router.get("/")
@@ -9,13 +12,14 @@ async def home():
     return {"message": "Você acessou a rota de autenticação", "authenticated": False}
 
 @auth_router.post("/register")
-async def register(email: str, password: str, name: str, session = Depends(get_db_session)):
+async def register(user_schema: UserSchema, session: Session = Depends(get_db_session)):
     user = None
-    user = session.query(User).filter_by(email=email).first()
+    user = session.query(User).filter_by(email=user_schema.email).first()
     if user:
-        return {"message": "Usuário já existe"}
+        raise HTTPException(status_code=400, detail="Usuário já existe")
     else:
-        new_user = User(name, email, password)
+        crypted_password = hash_password(user_schema.password)
+        new_user = User(user_schema.name, user_schema.email, crypted_password)
         session.add(new_user)
         session.commit()
-    return {"message": "Usuário registrado com sucesso"}
+    return {"message": f"Usuário registrado com sucesso {new_user.email}"}
