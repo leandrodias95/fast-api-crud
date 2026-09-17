@@ -2,9 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from models import User
 from dependencies import get_db_session
 from security import hash_password
-from schemas import UserSchema
+from schemas import UserSchema, LoginSchema
 from sqlalchemy.orm import Session
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
+
+def create_token(id: str):
+    token = f"a95c4b209ff9de1b823788c95aa33f0e4f121e7e609579d552a9ea62f3a948bc{id}"
+    return token
 
 @auth_router.get("/")
 async def home():
@@ -22,4 +26,14 @@ async def register(user_schema: UserSchema, session: Session = Depends(get_db_se
         new_user = User(user_schema.name, user_schema.email, crypted_password)
         session.add(new_user)
         session.commit()
+        session.refresh(new_user)
     return {"message": f"Usuário registrado com sucesso {new_user.email}"}
+
+@auth_router.post("/login")
+async def login(login: LoginSchema, session: Session = Depends(get_db_session)):
+    user = session.query(User).filter_by(email=login.email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Credenciais inválidas")
+    else:
+        access_token = create_token(user.id)
+        return {"access_token": access_token, "token_type": "Bearer"}
