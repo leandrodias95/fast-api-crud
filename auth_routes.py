@@ -1,14 +1,26 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from models import User
 from dependencies import get_db_session
-from main import bcrypt_context
+from main import bcrypt_context, SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from schemas import UserSchema, LoginSchema
 from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+from datetime import datetime, timedelta, timezone
+
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-def create_token(id: str):
-    token = f"a95c4b209ff9de1b823788c95aa33f0e4f121e7e609579d552a9ea62f3a948bc{id}"
-    return token
+def create_token(id: str, token_duration: Any | None = None, token_type: str = "access"):
+    # JWT
+    # user id
+    # experation_date
+    if not token_duration: 
+        token_duration = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expiration = datetime.now(timezone.utc) + token_duration
+    payload = {"sub": str(id), "exp": expiration, "type": token_type}
+    encode_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return encode_jwt
 
 def authenticate_user(email: str, password: str, session: Session):
     user = session.query(User).filter(User.email == email).first()
@@ -43,5 +55,32 @@ async def login(login: LoginSchema, session: Session = Depends(get_db_session)):
     if not user:
         raise HTTPException(status_code=400, detail="Usuário não encontrado ou credenciais inválidas")
     else:
-        access_token = create_token(user.id)
+        access_token = create_token(user.id, token_type="access")
+        refresh_token = create_token(user.id, token_duration=timedelta(days=7), token_type="refresh")
+        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "Bearer"}
+
+@auth_router.get("/refresh")
+async def use_refresh_token(refresh_token: str, session: Session = Depends(get_db_session)):
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=400, detail="Token inválido")
+
+        user = verify_refresh_token(payload, session)
+
+        if not user:
+            raise HTTPException(status_code=400, detail="Token inválido")
+
+        access_token = create_token(user.id, token_type="access")
+
         return {"access_token": access_token, "token_type": "Bearer"}
+
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Token inválido")
+
+def verify_refresh_token(token, session: Session = Depends(get_db_session)):
+    user = session.query(User).filter_by(id=int(token.get("sub"))).first()
+    if not user:
+        return False
+    return user
