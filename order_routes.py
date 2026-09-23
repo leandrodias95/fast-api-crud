@@ -9,8 +9,8 @@ order_router = APIRouter(prefix="/orders", tags=["orders"])
 
 @order_router.get("/")
 async def orders():
-    """Rota de pedidos que retorna a lista de pedidos. Todas as rotas de pedidos precisam de autenticação."""
-    return {"message": "Você acessou a rota de pedidos"}
+    """Orders route that returns the list of orders. All order routes require authentication."""
+    return {"message": "You accessed the orders route"}
 
 @order_router.post("/order")
 async def create_order(order_schema: OrderSchema, session: Session = Depends(get_db_session)):
@@ -20,4 +20,4 @@ async def create_order(order_schema: OrderSchema, session: Session = Depends(get
     session.add(new_order)
     session.commit()
     session.refresh(new_order)
-    return {"message": "Pedido criado com sucesso", "order": {"id": new_order.id}}
+    return {"message": "Order created successfully", "order": {"id": new_order.id}}
