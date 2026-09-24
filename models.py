@@ -35,13 +35,13 @@ class  Order(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     status = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    total = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
     #ITEMS ORDERED RELATIONSHIP
 
-    def __init__(self, status="PENDING", user_id: int = None, total=0):
+    def __init__(self, status="PENDING", user_id: int = None, price=0):
         self.status = status
         self.user_id = user_id
-        self.total = total
+        self.price = price
 
 class ItemsOrdered(Base):
     __tablename__ = "items_ordereds"

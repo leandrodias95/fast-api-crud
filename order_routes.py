@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from models import Order
+from models import Order, User
 from sqlalchemy.orm import Session
 from dependencies import get_db_session, verify_token
 from schemas import OrderSchema
@@ -23,10 +23,15 @@ async def create_order(order_schema: OrderSchema, session: Session = Depends(get
     return {"message": "Order created successfully", "order": {"id": new_order.id}}
 
 @order_router.post("/order/cancel/{order_id}")
-async def cancel_order(order_id: int, session: Session = Depends(get_db_session)):
-    order = session.query(Order).filter_by(id=order_id).first()
+async def cancel_order(order_id: int, session: Session = Depends(get_db_session), user:User=Depends(verify_token)):
+    order = session.query(Order).filter(Order.id==order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    if user.admin is False and order.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You are not authorized to cancel this order")
     order.status = "CANCELED"
     session.commit()
-    return {"message": "Order canceled successfully", "order": {"id": order_id}}
+    return {
+            "message": f"Order canceled successfully, number order {order.id}",
+            "order": order
+            }
