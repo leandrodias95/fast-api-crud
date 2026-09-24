@@ -13,6 +13,9 @@ class UserSchema(BaseModel):
 
 class OrderSchema(BaseModel):
     user_id: int
+    status: Optional[str] = "PENDING"
+    total: Optional[int] = 0
+
 
     class Config:
         from_attributes = True
