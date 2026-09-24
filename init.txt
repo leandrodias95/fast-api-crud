@@ -1,9 +1,102 @@
+COMO CRIAR O BANCO COM ALEMBIC (comandos reais deste projeto)
+============================================================
 
-ativa:
-source fast-api-crud/bin/activate
+Antes de tudo, ative o venv:
+    source fast-api-crud/bin/activate
 
-desativa:
-deactivate
+Para desativar:
+    deactivate
 
-incia o servidor: 
-uvicorn main:app --reload 
+Para iniciar o servidor:
+    uvicorn main:app --reload
+
+---------------------------------------------------------
+CRIAR O BANCO DO ZERO
+---------------------------------------------------------
+1. Apague o banco antigo (se existir):
+    rm database.db
+
+2. Gere a migration a partir dos models (autogenerate):
+    alembic revision --autogenerate -m "criar tabelas"
+
+   - O Alembic lê os models automaticamente (models.py -> Base -> target_metadata no env.py)
+   - DEPOIS de gerar, revise o arquivo em alembic/versions/
+
+3. Cria as tabelas no banco:
+    alembic upgrade head
+
+   (O database.db é criado automaticamente aqui, não precisa criar na mão)
+
+4. Confirme a versão aplicada:
+    alembic current
+
+---------------------------------------------------------
+QUANDO VOCÊ MUDAR UM MODEL (ex.: adicionar coluna)
+---------------------------------------------------------
+1. Edite o models.py
+2. Gere:
+    alembic revision --autogenerate -m "descrição da mudança"
+3. Revise o arquivo gerado em alembic/versions/
+4. Aplique:
+    alembic upgrade head
+
+--------------------------------------------------------
+RENOMEAR COLUNA SEM PERDER DADOS (editar a migration à mão)
+--------------------------------------------------------
+Exemplo: renomear a coluna total para price em orders.
+
+1. No models.py, troque o nome da coluna:
+    total = Column(Float, nullable=False)   ->   price = Column(Float, nullable=False)
+   (faça o mesmo no __init__ da classe)
+
+2. Gere a migration automática:
+    alembic revision --autogenerate -m "rename total to price"
+
+   ATENÇÃO: o autogenerate NÃO detecta rename. Ele vai gerar algo assim
+   (add price + drop total) — isso APAGARIA o dado da coluna:
+
+    def upgrade():
+        op.add_column('orders', sa.Column('price', sa.Float(), nullable=False))
+        op.drop_column('orders', 'total')
+
+3. EDITE o arquivo gerado em alembic/versions/ e troque o conteúdo
+   do upgrade() e do downgrade() pelo comando de RENAME:
+
+    def upgrade():
+        op.alter_column('orders', 'total', new_column_name='price')
+
+    def downgrade():
+        op.alter_column('orders', 'price', new_column_name='total')
+
+4. Aplique a migration:
+    alembic upgrade head
+
+5. Confirme a coluna renomeada (dados preservados):
+    alembic current
+    # e teste uma query: session.query(Order).first()
+
+--------------------------------------------------------
+REGRAS RÁPIDAS
+--------------------------------------------------------
+- ADICIONAR coluna: autogenerate faz sozinho, dados preservados.
+- RENOMEAR coluna: edite a migration com op.alter_column (senão perde dado).
+- DROPAR coluna: perde os dados daquela coluna.
+
+--------------------------------------------------------
+OUTROS COMANDOS ÚTEIS
+---------------------------------------------------------
+- Ver histórico:
+    alembic history
+- Desfazer a última migration:
+    alembic downgrade -1
+- Desfazer tudo (banco vazio):
+    alembic downgrade base
+- Gerar migration manual (sem autogenerate):
+    alembic revision -m "descrição"
+- Ver o SQL sem aplicar:
+    alembic upgrade head --sql
+
+---------------------------------------------------------
+OBS: este projeto já está configurado com Alembic:
+    alembic.ini   -> sqlalchemy.url = sqlite:///database.db
+    alembic/env.py -> importa from models import Base
