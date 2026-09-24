@@ -1,7 +1,10 @@
-COMO CRIAR O BANCO COM ALEMBIC (comandos reais deste projeto)
-============================================================
+---------------------------------------------------------
+ATIVAR AMBIENTE PYTHON COM VENV E INICIAR SERVIDOR
+---------------------------------------------------------
+Criar ambiente virtual:
+    python -m venv meu_ambiente_virtual
 
-Antes de tudo, ative o venv:
+Para ativar o ambiente venv:
     source fast-api-crud/bin/activate
 
 Para desativar:
