@@ -26,3 +26,13 @@ class LoginSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ItemsOrderedSchema(BaseModel):
+    product_name: str
+    quantity: int
+    unity_price: float
+    size: str
+    flavor: str
+    
+    class Config:
+        from_attributes = True

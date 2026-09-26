@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, create_engine, Column, Integer, String, Float, ForeignKey
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy_utils import ChoiceType
 
 db = create_engine("sqlite:///database.db")
@@ -37,11 +37,18 @@ class  Order(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     price = Column(Float, nullable=False)
     #ITEMS ORDERED RELATIONSHIP
+    items = relationship("ItemsOrdered", back_populates="order", cascade="all, delete-orphan")
 
     def __init__(self, status="PENDING", user_id: int = None, price=0):
         self.status = status
         self.user_id = user_id
         self.price = price
+        
+    def price_calculation(self, items_ordered):
+        total_price = 0
+        for item in items_ordered:
+            total_price += item.quantity * item.unity_price
+        self.price = total_price
 
 class ItemsOrdered(Base):
     __tablename__ = "items_ordereds"
@@ -53,6 +60,8 @@ class ItemsOrdered(Base):
     unity_price = Column(Float, nullable=False)
     size = Column(String, nullable=True)
     flavor = Column(String, nullable=True)
+
+    order = relationship("Order", back_populates="items")
 
     def __init__(self, order_id: int = None, product_name: str = "", quantity: int = 0, unity_price: float = 0, size: str = None, flavor: str = None):
         self.order_id = order_id

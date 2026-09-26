@@ -44,7 +44,7 @@ async def register(user_schema: UserSchema, session: Session = Depends(get_db_se
         raise HTTPException(status_code=400, detail="User already exists")
     else:
         crypted_password = bcrypt_context.hash(user_schema.password)
-        new_user = User(user_schema.name, user_schema.email, crypted_password)
+        new_user = User(name=user_schema.name, email=user_schema.email, admin=user_schema.admin, password=crypted_password)
         session.add(new_user)
         session.commit()
         session.refresh(new_user)
